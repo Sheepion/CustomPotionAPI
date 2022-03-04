@@ -1,0 +1,8 @@
+name: CustomPotionAPI
+version: '${project.version}'
+main: com.sheepion.custompotionapi.CustomPotionAPI
+api-version: 1.18
+prefix: CustomPotionAPI
+authors: [ Sheepion ]
+description: provide custom potion effect support
+website: https://github.com/Sheepion
