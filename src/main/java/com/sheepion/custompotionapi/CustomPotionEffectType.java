@@ -16,7 +16,6 @@ import java.util.ArrayList;
  * to apply this effect to a living entity, call CustomPotionEffectType#apply(LivingEntity)
  *
  * @author Sheepion
- * @date 3/4/2022
  */
 public interface CustomPotionEffectType {
 
@@ -37,6 +36,10 @@ public interface CustomPotionEffectType {
      * if the effect can be removed by milk
      * this will be automatically called by CustomPotionManager when entity drinks milk.
      *
+     * @param entity the entity that drinks milk.
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
      * @return true if the effect can be removed by milk
      */
     boolean canBeRemovedByMilk(LivingEntity entity, int duration, int amplifier, int checkInterval);
@@ -44,7 +47,8 @@ public interface CustomPotionEffectType {
     /**
      * the potion effect to the entity
      * this method will be called every %checkInterval% ticks for %duration% ticks.
-     *  @param entity        the entity to apply the potion effect
+     *
+     * @param entity        the entity to apply the potion effect
      * @param duration      the REST duration of the potion effect.
      *                      can be zero if the effect will be removed immediately after this method is called.
      * @param amplifier     the amplifier of the potion effect, you can use this to adjust the effect.
@@ -64,6 +68,9 @@ public interface CustomPotionEffectType {
      * get the display name of the potion item
      * used when create the potion item by CustomPotionManager#getPotion(...)
      *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
      * @return the display name
      */
     Component potionDisplayName(int duration, int amplifier, int checkInterval);
@@ -72,14 +79,18 @@ public interface CustomPotionEffectType {
      * get the lore of the potion item
      * used when create the potion item by CustomPotionManager#getPotion(...)
      *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
      * @return the lore
      */
     ArrayList<Component> potionLore(int duration, int amplifier, int checkInterval);
 
     /**
      * get the color of the potion item
-     * @param duration the duration of the potion effect.
-     * @param amplifier the amplifier of the potion effect.
+     *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
      * @param checkInterval the check interval of the potion effect.
      * @return the color
      */
@@ -87,6 +98,7 @@ public interface CustomPotionEffectType {
 
     /**
      * if the potion has enchanted glow
+     *
      * @return true if the potion has enchanted glow
      */
     boolean potionEnchanted();
@@ -95,6 +107,9 @@ public interface CustomPotionEffectType {
      * get the lore of the splash potion item
      * used when create the potion item by CustomPotionManager#getSplashPotion(...)
      *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
      * @return the lore
      */
     ArrayList<Component> splashPotionLore(int duration, int amplifier, int checkInterval);
@@ -103,14 +118,18 @@ public interface CustomPotionEffectType {
      * get the lore of the splash potion item
      * used when create the potion item by CustomPotionManager#getSplashPotion(...)
      *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
      * @return the display name
      */
     Component splashPotionDisplayName(int duration, int amplifier, int checkInterval);
 
     /**
      * get the color of the splash potion item
-     * @param duration the duration of the potion effect.
-     * @param amplifier the amplifier of the potion effect.
+     *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
      * @param checkInterval the check interval of the potion effect.
      * @return the color
      */
@@ -118,6 +137,7 @@ public interface CustomPotionEffectType {
 
     /**
      * if the splash potion has enchanted glow
+     *
      * @return true if the splash potion has enchanted glow
      */
     boolean splashPotionEnchanted();

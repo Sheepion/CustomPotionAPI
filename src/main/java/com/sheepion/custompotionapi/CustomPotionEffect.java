@@ -15,7 +15,6 @@ import static com.sheepion.custompotionapi.CustomPotionManager.activeEffectsOnEn
  *
  * presents a custom potion effect with specified effect type, duration, amplifier and check interval.
  * @author Sheepion
- * @date 3/4/2022
  */
 public class CustomPotionEffect implements Runnable {
 
@@ -160,6 +159,10 @@ public class CustomPotionEffect implements Runnable {
         }
     }
 
+    /**
+     * copy a new CustomPotionEffect with the same effect type, duration, amplifier and checkInterval
+     * @return the new CustomPotionEffect
+     */
     public @NotNull CustomPotionEffect copy() {
         return new CustomPotionEffect(effectType, duration, amplifier, checkInterval);
     }

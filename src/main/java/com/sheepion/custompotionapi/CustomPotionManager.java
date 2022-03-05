@@ -29,7 +29,6 @@ import java.util.UUID;
  * package: com.sheepion.custompotionapi
  *
  * @author Sheepion
- * @date 3/4/2022
  */
 public class CustomPotionManager implements Listener {
     static {
@@ -209,7 +208,7 @@ public class CustomPotionManager implements Listener {
         int duration = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER);
         int checkInterval = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_check_interval"), PersistentDataType.INTEGER);
         int amplifier = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_amplifier"), PersistentDataType.INTEGER);
-        return new CustomPotionEffect(customPotionEffectType, duration, checkInterval, amplifier);
+        return new CustomPotionEffect(customPotionEffectType, duration, amplifier, checkInterval);
     }
 
     /**
@@ -284,10 +283,11 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
-     * apply unfinished potion effect to player
+     * apply unfinished potion effect to the player
+     * @param event the player join event
      */
     @EventHandler(ignoreCancelled = true)
-    public void onPlayerJoin(PlayerJoinEvent event) {
+    private void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
         if (!activeEffectsOnEntity.containsKey(player.getUniqueId())) {
             activeEffectsOnEntity.put(player.getUniqueId(), new ArrayList<>());
