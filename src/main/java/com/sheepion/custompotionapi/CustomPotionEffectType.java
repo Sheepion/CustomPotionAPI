@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.LivingEntity;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
@@ -36,7 +37,7 @@ public interface CustomPotionEffectType {
      * if the effect can be removed by milk
      * this will be automatically called by CustomPotionManager when entity drinks milk.
      *
-     * @param entity the entity that drinks milk.
+     * @param entity        the entity that drinks milk.
      * @param duration      the duration of the potion effect.
      * @param amplifier     the amplifier of the potion effect.
      * @param checkInterval the check interval of the potion effect.
@@ -62,7 +63,7 @@ public interface CustomPotionEffectType {
      *
      * @return the potion mix recipes
      */
-    ArrayList<PotionMix> potionMixes();
+    @Nullable ArrayList<PotionMix> potionMixes();
 
     /**
      * get the display name of the potion item
@@ -141,4 +142,43 @@ public interface CustomPotionEffectType {
      * @return true if the splash potion has enchanted glow
      */
     boolean splashPotionEnchanted();
+
+    /**
+     * get the lore of the lingering potion item
+     * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
+     *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
+     * @return the lore
+     */
+    ArrayList<Component> lingeringPotionLore(int duration, int amplifier, int checkInterval);
+
+    /**
+     * get the lore of the lingering potion item
+     * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
+     *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
+     * @return the display name
+     */
+    Component lingeringPotionDisplayName(int duration, int amplifier, int checkInterval);
+
+    /**
+     * get the color of the lingering potion item
+     *
+     * @param duration      the duration of the potion effect.
+     * @param amplifier     the amplifier of the potion effect.
+     * @param checkInterval the check interval of the potion effect.
+     * @return the color
+     */
+    Color lingeringPotionColor(int duration, int amplifier, int checkInterval);
+
+    /**
+     * if the lingering potion has enchanted glow
+     *
+     * @return true if the lingering potion has enchanted glow
+     */
+    boolean lingeringPotionEnchanted();
 }

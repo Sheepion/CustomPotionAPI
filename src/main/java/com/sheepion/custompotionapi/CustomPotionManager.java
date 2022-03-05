@@ -4,9 +4,13 @@ import io.papermc.paper.potion.PotionMix;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.AreaEffectCloud;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
+import org.bukkit.event.entity.LingeringPotionSplashEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -16,6 +20,8 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -44,6 +50,11 @@ public class CustomPotionManager implements Listener {
      * used to store all the custom potion effects an entity has
      */
     public static final HashMap<UUID, ArrayList<CustomPotionEffect>> activeEffectsOnEntity = new HashMap<>();
+
+    /**
+     * used to store custom potion effect on area effect clouds.
+     */
+    public static final HashMap<AreaEffectCloud, CustomPotionEffect> areaEffectClouds = new HashMap<>();
 
     /**
      * get the specific effect instance applied on the entity
@@ -104,10 +115,14 @@ public class CustomPotionManager implements Listener {
             CustomPotionAPI.getInstance().getServer().getPluginManager().registerEvents((Listener) customPotionEffectType, CustomPotionAPI.getInstance());
         }
         //register potion mix recipes
-        for (PotionMix potionMix : customPotionEffectType.potionMixes()) {
-            CustomPotionAPI.getInstance().getServer().getPotionBrewer().removePotionMix(potionMix.getKey());
-            CustomPotionAPI.getInstance().getServer().getPotionBrewer().addPotionMix(potionMix);
+        ArrayList<PotionMix> potionMixes = customPotionEffectType.potionMixes();
+        if (potionMixes != null) {
+            for (PotionMix potionMix : potionMixes) {
+                CustomPotionAPI.getInstance().getServer().getPotionBrewer().removePotionMix(potionMix.getKey());
+                CustomPotionAPI.getInstance().getServer().getPotionBrewer().addPotionMix(potionMix);
+            }
         }
+
     }
 
     /**
@@ -173,6 +188,36 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
+     * store the potion effect on the area effect cloud.
+     *
+     * @param event the event
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onLingeringPotionSplash(LingeringPotionSplashEvent event) {
+        CustomPotionAPI.getInstance().getLogger().info("onLingeringPotionSplash");
+        CustomPotionEffect customPotionEffect = getCustomPotionEffect(event.getEntity().getItem());
+        CustomPotionAPI.getInstance().getLogger().info("customPotionEffect: " + customPotionEffect);
+        areaEffectClouds.put(event.getAreaEffectCloud(), customPotionEffect);
+    }
+
+    /**
+     * apply the potion effect to entities that are affected by the area effect cloud
+     *
+     * @param event the event
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onAreaEffectCloudApply(AreaEffectCloudApplyEvent event) {
+        CustomPotionAPI.getInstance().getLogger().info("onAreaEffectCloudApply");
+        CustomPotionEffect customPotionEffect = areaEffectClouds.get(event.getEntity());
+        if (customPotionEffect != null) {
+            for (LivingEntity affectedEntity : event.getAffectedEntities()) {
+                customPotionEffect.apply(affectedEntity);
+            }
+            event.setCancelled(true);
+        }
+    }
+
+    /**
      * get the potion effect from an item
      *
      * @param item the item
@@ -212,19 +257,6 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
-     * create a custom potion item
-     *
-     * @param customPotionEffectType the custom potion effect type
-     * @param duration               the duration of the potion effect in ticks
-     * @param amplifier              the amplifier of the potion effect
-     * @param checkInterval          the interval of the potion effect in ticks
-     * @return the custom potion item
-     */
-    public static ItemStack getPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval) {
-        return getPotion(Material.POTION, customPotionEffectType, duration, amplifier, checkInterval);
-    }
-
-    /**
      * create a custom potion item use given material
      *
      * @param material               the material of the potion
@@ -257,6 +289,14 @@ public class CustomPotionManager implements Listener {
                     if (potionEffectType.splashPotionEnchanted()) {
                         meta.addEnchant(Enchantment.DURABILITY, 1, true);
                     }
+                } else if (material.equals(Material.LINGERING_POTION)) {
+                    ((PotionMeta) meta).setColor(potionEffectType.lingeringPotionColor(duration, amplifier, checkInterval));
+                    ((PotionMeta) meta).addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS, 0, 0, false, false, false), true);
+                    meta.displayName(potionEffectType.lingeringPotionDisplayName(duration, amplifier, checkInterval));
+                    meta.lore(potionEffectType.lingeringPotionLore(duration, amplifier, checkInterval));
+                    if (potionEffectType.lingeringPotionEnchanted()) {
+                        meta.addEnchant(Enchantment.DURABILITY, 1, true);
+                    }
                 }
                 break;
             }
@@ -278,12 +318,39 @@ public class CustomPotionManager implements Listener {
      * @param checkInterval          the interval of the potion effect in ticks
      * @return the custom potion item
      */
+    public static ItemStack getPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval) {
+        return getPotion(Material.POTION, customPotionEffectType, duration, amplifier, checkInterval);
+    }
+
+    /**
+     * create a custom splash potion item
+     *
+     * @param customPotionEffectType the custom potion effect type
+     * @param duration               the duration of the potion effect in ticks
+     * @param amplifier              the amplifier of the potion effect
+     * @param checkInterval          the interval of the potion effect in ticks
+     * @return the custom potion item
+     */
     public static ItemStack getSplashPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval) {
         return getPotion(Material.SPLASH_POTION, customPotionEffectType, duration, amplifier, checkInterval);
     }
 
     /**
+     * create a custom lingering potion item
+     *
+     * @param customPotionEffectType the custom potion effect type
+     * @param duration               the duration of the potion effect in ticks
+     * @param amplifier              the amplifier of the potion effect
+     * @param checkInterval          the interval of the potion effect in ticks
+     * @return the custom potion item
+     */
+    public static ItemStack getLingeringPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval) {
+        return getPotion(Material.LINGERING_POTION, customPotionEffectType, duration, amplifier, checkInterval);
+    }
+
+    /**
      * apply unfinished potion effect to the player
+     *
      * @param event the player join event
      */
     @EventHandler(ignoreCancelled = true)
