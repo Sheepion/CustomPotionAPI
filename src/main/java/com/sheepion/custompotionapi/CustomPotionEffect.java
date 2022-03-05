@@ -148,31 +148,15 @@ public class CustomPotionEffect implements Runnable {
         duration -= checkInterval;
         if (duration < 0) {
             cancel();
-            CustomPotionAPI.getInstance().getLogger().info("cancelled: duration < 0");
-            CustomPotionAPI.getInstance().getLogger().info("effect left:");
-            for (CustomPotionEffect customPotionEffect : activeEffectsOnEntity.get(entity.getUniqueId())) {
-                CustomPotionAPI.getInstance().getLogger().info(customPotionEffect.getEffectType().getKey().toString());
-            }
-            CustomPotionAPI.getInstance().getLogger().info("duration: " + duration);
             return;
         }
         if (entity.isDead() || !entity.isValid()) {
             cancel();
-            CustomPotionAPI.getInstance().getLogger().info("effect left:");
-            for (CustomPotionEffect customPotionEffect : activeEffectsOnEntity.get(entity.getUniqueId())) {
-                CustomPotionAPI.getInstance().getLogger().info(customPotionEffect.getEffectType().getKey().toString());
-            }
-            CustomPotionAPI.getInstance().getLogger().info("cancelled: entity is dead or invalid");
             return;
         }
-        effectType.effect(entity, duration, checkInterval, amplifier);
+        effectType.effect(entity, duration, amplifier, checkInterval);
         if (duration == 0) {
             cancel();
-            CustomPotionAPI.getInstance().getLogger().info("effect left:");
-            for (CustomPotionEffect customPotionEffect : activeEffectsOnEntity.get(entity.getUniqueId())) {
-                CustomPotionAPI.getInstance().getLogger().info(customPotionEffect.getEffectType().getKey().toString());
-            }
-            CustomPotionAPI.getInstance().getLogger().info("cancelled: duration == 0");
         }
     }
 
