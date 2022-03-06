@@ -181,4 +181,49 @@ public interface CustomPotionEffectType {
      * @return true if the lingering potion has enchanted glow
      */
     boolean lingeringPotionEnchanted();
+
+    /**
+     * the initial duration which this cloud will exist for (in ticks).
+     *
+     * @return the duration ticks
+     */
+    int areaEffectCloudDuration();
+
+    /**
+     * the amount that the duration of this cloud will INCREASE by when it applies an effect to an entity.
+     * make this value negative to make the duration decrease.
+     *
+     * @return the duration ticks on use.
+     */
+    int areaEffectCloudDurationOnUse();
+
+    /**
+     * the initial radius of the cloud.
+     *
+     * @return the radius
+     */
+    float areaEffectCloudRadius();
+
+    /**
+     * the amount that the radius of this cloud will INCREASE by when it applies an effect to an entity.
+     * make this value negative to make the radius decrease.
+     *
+     * @return the radius on use.
+     */
+    float areaEffectCloudRadiusOnUse();
+
+    /**
+     * the amount that the radius of this cloud will INCREASE by each tick.
+     * make this value negative to make it decrease.
+     *
+     * @return the radius on tick.
+     */
+    float areaEffectCloudRadiusPerTick();
+
+    /**
+     * the time that an entity will be immune from subsequent exposure.
+     *
+     * @return the time in ticks.
+     */
+    int areaEffectCloudReapplicationDelay();
 }

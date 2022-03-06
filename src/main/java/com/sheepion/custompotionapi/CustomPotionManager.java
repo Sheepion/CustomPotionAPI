@@ -37,8 +37,26 @@ import java.util.UUID;
  * @author Sheepion
  */
 public class CustomPotionManager implements Listener {
+    /**
+     * used to store custom potion effect on area effect clouds.
+     */
+    public static final HashMap<AreaEffectCloud, CustomPotionEffect> areaEffectClouds = new HashMap<>();
+
     static {
         CustomPotionAPI.getInstance().getServer().getPluginManager().registerEvents(new CustomPotionManager(), CustomPotionAPI.getInstance());
+
+        //clear dead area effect clouds task
+        CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimerAsynchronously(CustomPotionAPI.getInstance(), () -> {
+            ArrayList<AreaEffectCloud> toRemove = new ArrayList<>();
+            for (AreaEffectCloud areaEffectCloud : areaEffectClouds.keySet()) {
+                if (areaEffectCloud.isDead()) {
+                    toRemove.add(areaEffectCloud);
+                }
+            }
+            for (AreaEffectCloud areaEffectCloud : toRemove) {
+                areaEffectClouds.remove(areaEffectCloud);
+            }
+        }, 0L, 40L);
     }
 
     /**
@@ -51,10 +69,6 @@ public class CustomPotionManager implements Listener {
      */
     public static final HashMap<UUID, ArrayList<CustomPotionEffect>> activeEffectsOnEntity = new HashMap<>();
 
-    /**
-     * used to store custom potion effect on area effect clouds.
-     */
-    public static final HashMap<AreaEffectCloud, CustomPotionEffect> areaEffectClouds = new HashMap<>();
 
     /**
      * get the specific effect instance applied on the entity
@@ -196,7 +210,16 @@ public class CustomPotionManager implements Listener {
     public void onLingeringPotionSplash(LingeringPotionSplashEvent event) {
         CustomPotionAPI.getInstance().getLogger().info("onLingeringPotionSplash");
         CustomPotionEffect customPotionEffect = getCustomPotionEffect(event.getEntity().getItem());
+        if (customPotionEffect == null) {
+            return;
+        }
         CustomPotionAPI.getInstance().getLogger().info("customPotionEffect: " + customPotionEffect);
+        event.getAreaEffectCloud().setDuration(customPotionEffect.getEffectType().areaEffectCloudDuration());
+        event.getAreaEffectCloud().setDurationOnUse(customPotionEffect.getEffectType().areaEffectCloudDurationOnUse());
+        event.getAreaEffectCloud().setRadius(customPotionEffect.getEffectType().areaEffectCloudRadius());
+        event.getAreaEffectCloud().setRadiusOnUse(customPotionEffect.getEffectType().areaEffectCloudRadiusOnUse());
+        event.getAreaEffectCloud().setRadiusPerTick(customPotionEffect.getEffectType().areaEffectCloudRadiusPerTick());
+        event.getAreaEffectCloud().setReapplicationDelay(customPotionEffect.getEffectType().areaEffectCloudReapplicationDelay());
         areaEffectClouds.put(event.getAreaEffectCloud(), customPotionEffect);
     }
 
@@ -213,7 +236,6 @@ public class CustomPotionManager implements Listener {
             for (LivingEntity affectedEntity : event.getAffectedEntities()) {
                 customPotionEffect.apply(affectedEntity);
             }
-            event.setCancelled(true);
         }
     }
 
@@ -291,7 +313,7 @@ public class CustomPotionManager implements Listener {
                     }
                 } else if (material.equals(Material.LINGERING_POTION)) {
                     ((PotionMeta) meta).setColor(potionEffectType.lingeringPotionColor(duration, amplifier, checkInterval));
-                    ((PotionMeta) meta).addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS, 0, 0, false, false, false), true);
+                    ((PotionMeta) meta).addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS, 0, 0, false, true, true), true);
                     meta.displayName(potionEffectType.lingeringPotionDisplayName(duration, amplifier, checkInterval));
                     meta.lore(potionEffectType.lingeringPotionLore(duration, amplifier, checkInterval));
                     if (potionEffectType.lingeringPotionEnchanted()) {
