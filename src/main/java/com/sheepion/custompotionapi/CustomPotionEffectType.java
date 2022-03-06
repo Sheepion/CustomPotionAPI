@@ -4,6 +4,7 @@ import io.papermc.paper.potion.PotionMix;
 import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.entity.LivingEntity;
 import org.jetbrains.annotations.Nullable;
 
@@ -19,6 +20,37 @@ import java.util.ArrayList;
  * @author Sheepion
  */
 public interface CustomPotionEffectType {
+    /**
+     * the vanilla area effect cloud's duration (600 ticks, 30 seconds)
+     */
+    int VANILLA_AREA_EFFECT_CLOUD_DURATION = 600;
+
+    /**
+     * the vanilla area effect cloud's duration on use (0 tick)
+     */
+    int VANILLA_AREA_EFFECT_CLOUD_DURATION_ON_USE = 0;
+
+    /**
+     * the vanilla area effect cloud's radius (3 blocks)
+     */
+    float VANILLA_AREA_EFFECT_CLOUD_RADIUS = 3.0f;
+
+    /**
+     * the vanilla area effect cloud's radius on use (0.5 blocks)
+     */
+    float VANILLA_AREA_EFFECT_CLOUD_RADIUS_ON_USE = -0.5f;
+
+    /**
+     * the vanilla area effect cloud's radius per tick (0.005 blocks)
+     */
+    float VANILLA_AREA_EFFECT_CLOUD_RADIUS_PER_TICK = 0.005f;
+
+    /**
+     * the default area effect cloud's reapplication delay (5 ticks)
+     * note: this value might not be the same as the vanilla one
+     */
+    int DEFAULT_AREA_EFFECT_CLOUD_REAPPLICATION_DELAY = 5;
+
 
     /**
      * @return the namespaced key of the potion effect
@@ -56,6 +88,20 @@ public interface CustomPotionEffectType {
      * @param checkInterval the interval of the potion effect.
      */
     void effect(LivingEntity entity, int duration, int amplifier, int checkInterval);
+
+    //TODO:添加药水砸到地面以后的效果
+
+    /**
+     * the potion effect when splash potion hit block
+     * this method will be called automatically when the splash potion hit the block.
+     *
+     * @param block         the block that the potion hit
+     * @param duration      the duration of the potion effect
+     * @param amplifier     the amplifier of the potion effect
+     * @param checkInterval the check interval of the potion effect
+     */
+    default void splashPotionHitBlockEffect(Block block, int duration, int amplifier, int checkInterval) {
+    }
 
     /**
      * get all the potion mix recipes.
@@ -180,14 +226,18 @@ public interface CustomPotionEffectType {
      *
      * @return true if the lingering potion has enchanted glow
      */
-    boolean lingeringPotionEnchanted();
+    default boolean lingeringPotionEnchanted() {
+        return true;
+    }
 
     /**
      * the initial duration which this cloud will exist for (in ticks).
      *
      * @return the duration ticks
      */
-    int areaEffectCloudDuration();
+    default int areaEffectCloudDuration() {
+        return VANILLA_AREA_EFFECT_CLOUD_DURATION;
+    }
 
     /**
      * the amount that the duration of this cloud will INCREASE by when it applies an effect to an entity.
@@ -195,14 +245,18 @@ public interface CustomPotionEffectType {
      *
      * @return the duration ticks on use.
      */
-    int areaEffectCloudDurationOnUse();
+    default int areaEffectCloudDurationOnUse() {
+        return VANILLA_AREA_EFFECT_CLOUD_DURATION_ON_USE;
+    }
 
     /**
      * the initial radius of the cloud.
      *
      * @return the radius
      */
-    float areaEffectCloudRadius();
+    default float areaEffectCloudRadius() {
+        return VANILLA_AREA_EFFECT_CLOUD_RADIUS;
+    }
 
     /**
      * the amount that the radius of this cloud will INCREASE by when it applies an effect to an entity.
@@ -210,7 +264,9 @@ public interface CustomPotionEffectType {
      *
      * @return the radius on use.
      */
-    float areaEffectCloudRadiusOnUse();
+    default float areaEffectCloudRadiusOnUse() {
+        return VANILLA_AREA_EFFECT_CLOUD_RADIUS_ON_USE;
+    }
 
     /**
      * the amount that the radius of this cloud will INCREASE by each tick.
@@ -218,12 +274,16 @@ public interface CustomPotionEffectType {
      *
      * @return the radius on tick.
      */
-    float areaEffectCloudRadiusPerTick();
+    default float areaEffectCloudRadiusPerTick() {
+        return VANILLA_AREA_EFFECT_CLOUD_RADIUS_PER_TICK;
+    }
 
     /**
      * the time that an entity will be immune from subsequent exposure.
      *
      * @return the time in ticks.
      */
-    int areaEffectCloudReapplicationDelay();
+    default int areaEffectCloudReapplicationDelay() {
+        return DEFAULT_AREA_EFFECT_CLOUD_REAPPLICATION_DELAY;
+    }
 }
