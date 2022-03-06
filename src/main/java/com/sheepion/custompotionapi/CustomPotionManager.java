@@ -136,7 +136,6 @@ public class CustomPotionManager implements Listener {
                 CustomPotionAPI.getInstance().getServer().getPotionBrewer().addPotionMix(potionMix);
             }
         }
-
     }
 
     /**
@@ -146,7 +145,6 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
-        CustomPotionAPI.getInstance().getLogger().info("onPlayerItemConsume");
         if (event.getItem().getType() != Material.POTION) {
             return;
         }
@@ -155,7 +153,6 @@ public class CustomPotionManager implements Listener {
             return;
         }
         boolean success = customEffect.apply(event.getPlayer());
-        CustomPotionAPI.getInstance().getLogger().info("success: " + success);
     }
 
 
@@ -166,7 +163,6 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onPlayerDrinksMilk(PlayerItemConsumeEvent event) {
-        CustomPotionAPI.getInstance().getLogger().info("onPlayerDrinksMilk");
         if (event.getItem().getType() != Material.MILK_BUCKET) {
             return;
         }
@@ -176,7 +172,6 @@ public class CustomPotionManager implements Listener {
             int checkInterval = customPotionEffect.getCheckInterval();
             int amplifier = customPotionEffect.getAmplifier();
             if (customPotionEffect.getEffectType().canBeRemovedByMilk(player, duration, amplifier, checkInterval)) {
-                CustomPotionAPI.getInstance().getLogger().info("remove potion effect: " + customPotionEffect.getEffectType().getKey());
                 customPotionEffect.cancel();
             }
         });
@@ -189,15 +184,12 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onPotionSplash(PotionSplashEvent event) {
-        CustomPotionAPI.getInstance().getLogger().info("onPotionSplash");
-
         CustomPotionEffect customEffect = getCustomPotionEffect(event.getEntity().getItem());
         if (customEffect == null) {
             return;
         }
         event.getAffectedEntities().forEach(entity -> {
             boolean success = customEffect.apply(entity);
-            CustomPotionAPI.getInstance().getLogger().info("success: " + success);
         });
     }
 
@@ -208,12 +200,10 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onLingeringPotionSplash(LingeringPotionSplashEvent event) {
-        CustomPotionAPI.getInstance().getLogger().info("onLingeringPotionSplash");
         CustomPotionEffect customPotionEffect = getCustomPotionEffect(event.getEntity().getItem());
         if (customPotionEffect == null) {
             return;
         }
-        CustomPotionAPI.getInstance().getLogger().info("customPotionEffect: " + customPotionEffect);
         event.getAreaEffectCloud().setDuration(customPotionEffect.getEffectType().areaEffectCloudDuration());
         event.getAreaEffectCloud().setDurationOnUse(customPotionEffect.getEffectType().areaEffectCloudDurationOnUse());
         event.getAreaEffectCloud().setRadius(customPotionEffect.getEffectType().areaEffectCloudRadius());
@@ -230,7 +220,6 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     public void onAreaEffectCloudApply(AreaEffectCloudApplyEvent event) {
-        CustomPotionAPI.getInstance().getLogger().info("onAreaEffectCloudApply");
         CustomPotionEffect customPotionEffect = areaEffectClouds.get(event.getEntity());
         if (customPotionEffect != null) {
             for (LivingEntity affectedEntity : event.getAffectedEntities()) {
@@ -258,18 +247,14 @@ public class CustomPotionManager implements Listener {
         //get the effect information
         NamespacedKey type = NamespacedKey.fromString(typeKey);
         assert type != null;
-        CustomPotionAPI.getInstance().getLogger().info("type: " + type);
         CustomPotionEffectType customPotionEffectType = null;
         for (CustomPotionEffectType potionEffectType : customPotionEffectTypes) {
-            CustomPotionAPI.getInstance().getLogger().info("registered type: " + potionEffectType.getKey().toString());
             if (potionEffectType.getKey().equals(type)) {
-                CustomPotionAPI.getInstance().getLogger().info("valid potion effect type found");
                 customPotionEffectType = potionEffectType;
             }
         }
         // check if the potion effect type is valid
         if (customPotionEffectType == null) {
-            CustomPotionAPI.getInstance().getLogger().info("no valid potion effect type found");
             return null;
         }
         int duration = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER);
@@ -313,7 +298,7 @@ public class CustomPotionManager implements Listener {
                     }
                 } else if (material.equals(Material.LINGERING_POTION)) {
                     ((PotionMeta) meta).setColor(potionEffectType.lingeringPotionColor(duration, amplifier, checkInterval));
-                    ((PotionMeta) meta).addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS, 0, 0, false, true, true), true);
+                    ((PotionMeta) meta).addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS, 0, 0, false, false, false), true);
                     meta.displayName(potionEffectType.lingeringPotionDisplayName(duration, amplifier, checkInterval));
                     meta.lore(potionEffectType.lingeringPotionLore(duration, amplifier, checkInterval));
                     if (potionEffectType.lingeringPotionEnchanted()) {
