@@ -5,7 +5,9 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.projectiles.ProjectileSource;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -95,12 +97,52 @@ public interface CustomPotionEffectType {
      * the potion effect when splash potion hit block
      * this method will be called automatically when the splash potion hit the block.
      *
+     * @param shooter       the shooter of the splash potion
      * @param block         the block that the potion hit
      * @param duration      the duration of the potion effect
      * @param amplifier     the amplifier of the potion effect
      * @param checkInterval the check interval of the potion effect
      */
-    default void splashPotionHitBlockEffect(Block block, int duration, int amplifier, int checkInterval) {
+    default void splashPotionHitBlockEffect(ProjectileSource shooter, Block block, int duration, int amplifier, int checkInterval) {
+    }
+
+    /**
+     * the potion effect when lingering potion hit block
+     * this method will be called automatically when the lingering potion hit the block.
+     *
+     * @param shooter       the shooter of the lingering potion
+     * @param block         the block that the potion hit
+     * @param duration      the duration of the potion effect
+     * @param amplifier     the amplifier of the potion effect
+     * @param checkInterval the check interval of the potion effect
+     */
+    default void lingeringPotionHitBlockEffect(ProjectileSource shooter, Block block, int duration, int amplifier, int checkInterval) {
+    }
+
+    /**
+     * the potion effect when splash potion hit entity
+     * this method will be called automatically when the splash potion hit the entity.
+     *
+     * @param shooter       the shooter of the potion
+     * @param entity        the block that the potion hit
+     * @param duration      the duration of the potion effect
+     * @param amplifier     the amplifier of the potion effect
+     * @param checkInterval the check interval of the potion effect
+     */
+    default void splashPotionHitEntityEffect(ProjectileSource shooter, Entity entity, int duration, int amplifier, int checkInterval) {
+    }
+
+    /**
+     * the potion effect when lingering potion hit entity
+     * this method will be called automatically when the lingering potion hit the entity.
+     *
+     * @param shooter       the shooter of the potion
+     * @param entity        the entity that the potion hit
+     * @param duration      the duration of the potion effect
+     * @param amplifier     the amplifier of the potion effect
+     * @param checkInterval the check interval of the potion effect
+     */
+    default void lingeringPotionHitEntityEffect(ProjectileSource shooter, Entity entity, int duration, int amplifier, int checkInterval) {
     }
 
     /**
@@ -148,7 +190,9 @@ public interface CustomPotionEffectType {
      *
      * @return true if the potion has enchanted glow
      */
-    boolean potionEnchanted();
+    default boolean potionEnchanted() {
+        return true;
+    }
 
     /**
      * get the lore of the splash potion item
@@ -187,7 +231,9 @@ public interface CustomPotionEffectType {
      *
      * @return true if the splash potion has enchanted glow
      */
-    boolean splashPotionEnchanted();
+    default boolean splashPotionEnchanted() {
+        return true;
+    }
 
     /**
      * get the lore of the lingering potion item

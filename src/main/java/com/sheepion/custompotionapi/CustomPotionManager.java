@@ -3,15 +3,15 @@ package com.sheepion.custompotionapi;
 import io.papermc.paper.potion.PotionMix;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.AreaEffectCloud;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
 import org.bukkit.event.entity.LingeringPotionSplashEvent;
 import org.bukkit.event.entity.PotionSplashEvent;
+import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemFlag;
@@ -152,7 +152,7 @@ public class CustomPotionManager implements Listener {
         if (customEffect == null) {
             return;
         }
-        boolean success = customEffect.apply(event.getPlayer());
+        customEffect.apply(event.getPlayer());
     }
 
 
@@ -178,6 +178,42 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
+     * handle potion hit block effect and potion hit entity effect
+     *
+     * @param event the event
+     */
+    @EventHandler(ignoreCancelled = true)
+    public void onProjectileHit(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof ThrownPotion)) {
+            return;
+        }
+        ThrownPotion thrownPotion = (ThrownPotion) event.getEntity();
+        CustomPotionEffect customEffect = getCustomPotionEffect(thrownPotion.getItem());
+        if (customEffect == null) {
+            return;
+        }
+        CustomPotionEffectType customPotionEffectType = customEffect.getEffectType();
+        //handle potion hit block effect
+        Block block = event.getHitBlock();
+        if (block != null) {
+            if(thrownPotion.getItem().getType() == Material.SPLASH_POTION) {
+                customPotionEffectType.splashPotionHitBlockEffect(thrownPotion.getShooter(), block, customEffect.getDuration(), customEffect.getAmplifier(), customEffect.getCheckInterval());
+            }else if(thrownPotion.getItem().getType() == Material.LINGERING_POTION) {
+                customPotionEffectType.lingeringPotionHitBlockEffect(thrownPotion.getShooter(), block, customEffect.getDuration(), customEffect.getAmplifier(), customEffect.getCheckInterval());
+            }
+        }
+        //handle potion hit entity effect
+        Entity entity = event.getHitEntity();
+        if (entity != null) {
+            if(thrownPotion.getItem().getType() == Material.SPLASH_POTION) {
+                customPotionEffectType.splashPotionHitEntityEffect(thrownPotion.getShooter(), entity, customEffect.getDuration(), customEffect.getAmplifier(), customEffect.getCheckInterval());
+            }else if(thrownPotion.getItem().getType() == Material.LINGERING_POTION) {
+                customPotionEffectType.lingeringPotionHitEntityEffect(thrownPotion.getShooter(), entity, customEffect.getDuration(), customEffect.getAmplifier(), customEffect.getCheckInterval());
+            }
+        }
+    }
+
+    /**
      * apply the potion effect to entities
      *
      * @param event the event
@@ -188,9 +224,7 @@ public class CustomPotionManager implements Listener {
         if (customEffect == null) {
             return;
         }
-        event.getAffectedEntities().forEach(entity -> {
-            boolean success = customEffect.apply(entity);
-        });
+        event.getAffectedEntities().forEach(customEffect::apply);
     }
 
     /**
@@ -362,6 +396,7 @@ public class CustomPotionManager implements Listener {
      */
     @EventHandler(ignoreCancelled = true)
     private void onPlayerJoin(PlayerJoinEvent event) {
+        CustomPotionAPI.getInstance().getLogger().info("player join event");
         Player player = event.getPlayer();
         if (!activeEffectsOnEntity.containsKey(player.getUniqueId())) {
             activeEffectsOnEntity.put(player.getUniqueId(), new ArrayList<>());
