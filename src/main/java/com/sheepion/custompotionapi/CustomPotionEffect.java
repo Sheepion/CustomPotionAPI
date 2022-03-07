@@ -2,12 +2,13 @@ package com.sheepion.custompotionapi;
 
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 
-import static com.sheepion.custompotionapi.CustomPotionManager.activeEffectsOnEntity;
+import static com.sheepion.custompotionapi.CustomPotionManager.getActiveEffectsOnEntity;
 
 /**
  * project name: CustomPotionAPI
@@ -19,9 +20,8 @@ import static com.sheepion.custompotionapi.CustomPotionManager.activeEffectsOnEn
  */
 public class CustomPotionEffect implements Runnable {
 
-    private int duration;
-    private final int amplifier;
-    private final int checkInterval;
+    private final CustomPotionEffectProperty property;
+
     private BukkitTask task;
     private LivingEntity entity;
     private final CustomPotionEffectType effectType;
@@ -36,12 +36,21 @@ public class CustomPotionEffect implements Runnable {
     }
 
     /**
+     * get the mutable property of the effect.<br>
+     *
+     * @return the property
+     */
+    public CustomPotionEffectProperty getProperty() {
+        return property;
+    }
+
+    /**
      * get the remaining duration of the effect
      *
      * @return remaining duration in ticks
      */
     public int getDuration() {
-        return duration;
+        return property.getDuration();
     }
 
     /**
@@ -50,7 +59,7 @@ public class CustomPotionEffect implements Runnable {
      * @return amplifier
      */
     public int getAmplifier() {
-        return amplifier;
+        return property.getAmplifier();
     }
 
     /**
@@ -59,7 +68,16 @@ public class CustomPotionEffect implements Runnable {
      * @return check interval in ticks
      */
     public int getCheckInterval() {
-        return checkInterval;
+        return property.getCheckInterval();
+    }
+
+    /**
+     * get the delay before the effect take effect
+     *
+     * @return delay in ticks
+     */
+    public int getDelay() {
+        return property.getDelay();
     }
 
     /**
@@ -81,21 +99,35 @@ public class CustomPotionEffect implements Runnable {
         this.entity = entity;
     }
 
+
     /**
      * create a new CustomPotionEffect
      * make duration and checkInterval to zero for an instant effect
      * never try to create a permanent effect, because the effect will be removed before the first call to effect().
      *
      * @param effectType    effect type
+     * @param potion        the potion item that brings the effect to the entity
      * @param duration      duration in ticks
      * @param amplifier     amplifier
      * @param checkInterval run the effect() method in the effect type every checkInterval ticks
+     * @param delay         delay in ticks
      */
-    public CustomPotionEffect(@NotNull CustomPotionEffectType effectType, int duration, int amplifier, int checkInterval) {
+    public CustomPotionEffect(@NotNull CustomPotionEffectType effectType, ItemStack potion, int duration, int amplifier, int checkInterval, int delay) {
         this.effectType = effectType;
-        this.duration = duration;
-        this.amplifier = amplifier;
-        this.checkInterval = checkInterval;
+        this.property = new CustomPotionEffectProperty(potion, duration, duration, amplifier, false, checkInterval, delay);
+    }
+
+    /**
+     * create a new CustomPotionEffect
+     * make duration and checkInterval to zero for an instant effect
+     * never try to create a permanent effect, because the effect will be removed before the first call to effect().
+     *
+     * @param effectType effect type
+     * @param property   effect property
+     */
+    public CustomPotionEffect(@NotNull CustomPotionEffectType effectType, CustomPotionEffectProperty property) {
+        this.effectType = effectType;
+        this.property = property;
     }
 
     /**
@@ -105,14 +137,17 @@ public class CustomPotionEffect implements Runnable {
      * @return true if success, false if failed
      */
     public boolean apply(@NotNull LivingEntity entity) {
+        CustomPotionAPI.getInstance().getLogger().info("apply effect to entity");
         if (effectType.canBeApplied(entity)) {
-            CustomPotionEffect potion = copy();
-            potion.setEntity(entity);
-            potion.setTask(CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimer(CustomPotionAPI.getInstance(), potion, 0, checkInterval));
-            if (!activeEffectsOnEntity.containsKey(entity.getUniqueId())) {
-                activeEffectsOnEntity.put(entity.getUniqueId(), new ArrayList<>());
+            CustomPotionEffect potionEffect = copy();
+            potionEffect.setEntity(entity);
+            potionEffect.setTask(CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimer(CustomPotionAPI.getInstance(), potionEffect, property.getDelay(), property.getCheckInterval()));
+
+            CustomPotionAPI.getInstance().getLogger().info("task set");
+            if (!getActiveEffectsOnEntity().containsKey(entity.getUniqueId())) {
+                getActiveEffectsOnEntity().put(entity.getUniqueId(), new ArrayList<>());
             }
-            activeEffectsOnEntity.get(entity.getUniqueId()).add(potion);
+            getActiveEffectsOnEntity().get(entity.getUniqueId()).add(potionEffect);
             return true;
         }
         return false;
@@ -123,14 +158,16 @@ public class CustomPotionEffect implements Runnable {
      *
      * @param effectType    effect type
      * @param entity        entity to add effect to
+     * @param potion        the potion item that brings the effect to the entity
      * @param duration      duration in ticks
      * @param amplifier     amplifier
      * @param checkInterval run the effect() method in the effect type every checkInterval ticks
+     * @param delay         delay before the effect take effect
      * @return true if success, false if failed
      */
-    public static boolean apply(CustomPotionEffectType effectType, LivingEntity entity, int duration, int amplifier, int checkInterval) {
-        CustomPotionEffect potion = new CustomPotionEffect(effectType, duration, amplifier, checkInterval);
-        return potion.apply(entity);
+    public static boolean apply(CustomPotionEffectType effectType, LivingEntity entity, ItemStack potion, int duration, int amplifier, int checkInterval, int delay) {
+        CustomPotionEffect potionEffect = new CustomPotionEffect(effectType, potion, duration, amplifier, checkInterval, delay);
+        return potionEffect.apply(entity);
     }
 
     /**
@@ -140,8 +177,8 @@ public class CustomPotionEffect implements Runnable {
         if (task != null) {
             task.cancel();
         }
-        if (activeEffectsOnEntity.containsKey(entity.getUniqueId())) {
-            activeEffectsOnEntity.get(entity.getUniqueId()).remove(this);
+        if (getActiveEffectsOnEntity().containsKey(entity.getUniqueId())) {
+            getActiveEffectsOnEntity().get(entity.getUniqueId()).remove(this);
         }
     }
 
@@ -151,20 +188,24 @@ public class CustomPotionEffect implements Runnable {
         if (entity instanceof Player && !((Player) entity).isOnline()) {
             //don't use cancel() because it will remove the effect from the list.
             //keep the instance in the list, so that it can be applied again when the player comes back online.
+            CustomPotionAPI.getInstance().getLogger().info("canceled. player offline");
             task.cancel();
             return;
         }
-        duration -= checkInterval;
-        if (duration < 0) {
+        property.setRestDuration(property.getRestDuration() - property.getCheckInterval());
+        if (property.getRestDuration() < 0) {
+            CustomPotionAPI.getInstance().getLogger().info("canceled. duration<0");
             cancel();
             return;
         }
         if (entity.isDead() || !entity.isValid()) {
+            CustomPotionAPI.getInstance().getLogger().info("canceled. entity is dead or invalid");
             cancel();
             return;
         }
-        effectType.effect(entity, duration, amplifier, checkInterval);
-        if (duration == 0) {
+        effectType.effect(entity, property);
+        if (property.getRestDuration() == 0) {
+            CustomPotionAPI.getInstance().getLogger().info("canceled. duration==0");
             cancel();
         }
     }
@@ -175,6 +216,6 @@ public class CustomPotionEffect implements Runnable {
      * @return the new CustomPotionEffect
      */
     public @NotNull CustomPotionEffect copy() {
-        return new CustomPotionEffect(effectType, duration, amplifier, checkInterval);
+        return new CustomPotionEffect(effectType, property.clone());
     }
 }

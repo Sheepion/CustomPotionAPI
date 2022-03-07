@@ -72,82 +72,70 @@ public interface CustomPotionEffectType {
      * this will be automatically called by CustomPotionManager when entity drinks milk.
      *
      * @param entity        the entity that drinks milk.
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property      the property of the potion effect that removed by milk
      * @return true if the effect can be removed by milk
      */
-    boolean canBeRemovedByMilk(LivingEntity entity, int duration, int amplifier, int checkInterval);
+    boolean canBeRemovedByMilk(LivingEntity entity, CustomPotionEffectProperty property);
+
+    //TODO: 添加对于药水重复添加的解决方法，比如叠加、替换、移除
 
     /**
-     * the potion effect to the entity
-     * this method will be called every %checkInterval% ticks for %duration% ticks.
+     * the potion effect to the entity<br>
+     * this method will be called every %checkInterval% ticks for %duration% ticks.<br>
+     * if you want to make the effect instant, just make the duration and check interval the same.<br>
      *
-     * @param entity        the entity to apply the potion effect
-     * @param duration      the REST duration of the potion effect.
-     *                      can be zero if the effect will be removed immediately after this method is called.
-     * @param amplifier     the amplifier of the potion effect, you can use this to adjust the effect.
-     * @param checkInterval the interval of the potion effect.
+     * @param entity   the entity to apply the potion effect
+     * @param property the property of the potion effect that applied to the entity
      */
-    void effect(LivingEntity entity, int duration, int amplifier, int checkInterval);
-
-    //TODO:添加药水砸到地面以后的效果
+    void effect(LivingEntity entity, CustomPotionEffectProperty property);
 
     /**
      * the potion effect when splash potion hit block
      * this method will be called automatically when the splash potion hit the block.
      *
-     * @param shooter       the shooter of the splash potion
-     * @param block         the block that the potion hit
-     * @param duration      the duration of the potion effect
-     * @param amplifier     the amplifier of the potion effect
-     * @param checkInterval the check interval of the potion effect
+     * @param shooter  the shooter of the splash potion
+     * @param block    the block that the potion hit
+     * @param property the property of the potion effect that hit the block
      */
-    default void splashPotionHitBlockEffect(ProjectileSource shooter, Block block, int duration, int amplifier, int checkInterval) {
+    default void splashPotionHitBlockEffect(ProjectileSource shooter, Block block, CustomPotionEffectProperty property) {
     }
 
     /**
      * the potion effect when lingering potion hit block
      * this method will be called automatically when the lingering potion hit the block.
      *
-     * @param shooter       the shooter of the lingering potion
-     * @param block         the block that the potion hit
-     * @param duration      the duration of the potion effect
-     * @param amplifier     the amplifier of the potion effect
-     * @param checkInterval the check interval of the potion effect
+     * @param shooter  the shooter of the lingering potion
+     * @param block    the block that the potion hit
+     * @param property the property of the potion effect that hit the block
      */
-    default void lingeringPotionHitBlockEffect(ProjectileSource shooter, Block block, int duration, int amplifier, int checkInterval) {
+    default void lingeringPotionHitBlockEffect(ProjectileSource shooter, Block block, CustomPotionEffectProperty property) {
     }
 
     /**
      * the potion effect when splash potion hit entity
      * this method will be called automatically when the splash potion hit the entity.
      *
-     * @param shooter       the shooter of the potion
-     * @param entity        the block that the potion hit
-     * @param duration      the duration of the potion effect
-     * @param amplifier     the amplifier of the potion effect
-     * @param checkInterval the check interval of the potion effect
+     * @param shooter  the shooter of the potion
+     * @param entity   the block that the potion hit
+     * @param property the property of the potion effect that hit the entity
      */
-    default void splashPotionHitEntityEffect(ProjectileSource shooter, Entity entity, int duration, int amplifier, int checkInterval) {
+    default void splashPotionHitEntityEffect(ProjectileSource shooter, Entity entity, CustomPotionEffectProperty property) {
     }
 
     /**
-     * the potion effect when lingering potion hit entity
+     * the potion effect when lingering potion hit entity<br>
      * this method will be called automatically when the lingering potion hit the entity.
      *
-     * @param shooter       the shooter of the potion
-     * @param entity        the entity that the potion hit
-     * @param duration      the duration of the potion effect
-     * @param amplifier     the amplifier of the potion effect
-     * @param checkInterval the check interval of the potion effect
+     * @param shooter  the shooter of the potion
+     * @param entity   the entity that the potion hit
+     * @param property the property of the potion effect that hit the entity
      */
-    default void lingeringPotionHitEntityEffect(ProjectileSource shooter, Entity entity, int duration, int amplifier, int checkInterval) {
+    default void lingeringPotionHitEntityEffect(ProjectileSource shooter, Entity entity, CustomPotionEffectProperty property) {
     }
 
     /**
-     * get all the potion mix recipes.
-     * those recipes will be automatically registered when you register this potion effect type.
+     * get all the potion mix recipes that need to register.<br>
+     * those recipes will be automatically registered to the potion brewer when you register this potion effect type.
      *
      * @return the potion mix recipes
      */
@@ -157,40 +145,35 @@ public interface CustomPotionEffectType {
      * get the display name of the potion item
      * used when create the potion item by CustomPotionManager#getPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the display name
      */
-    Component potionDisplayName(int duration, int amplifier, int checkInterval);
+    Component potionDisplayName(CustomPotionEffectProperty property);
 
     /**
      * get the lore of the potion item
      * used when create the potion item by CustomPotionManager#getPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the lore
      */
-    ArrayList<Component> potionLore(int duration, int amplifier, int checkInterval);
+    ArrayList<Component> potionLore(CustomPotionEffectProperty property);
 
     /**
      * get the color of the potion item
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the potion effect property
      * @return the color
      */
-    Color potionColor(int duration, int amplifier, int checkInterval);
+    Color potionColor(CustomPotionEffectProperty property);
 
     /**
      * if the potion has enchanted glow
      *
+     * @param property the potion effect property
      * @return true if the potion has enchanted glow
      */
-    default boolean potionEnchanted() {
+    default boolean potionEnchanted(CustomPotionEffectProperty property) {
         return true;
     }
 
@@ -198,40 +181,36 @@ public interface CustomPotionEffectType {
      * get the lore of the splash potion item
      * used when create the potion item by CustomPotionManager#getSplashPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the lore
      */
-    ArrayList<Component> splashPotionLore(int duration, int amplifier, int checkInterval);
+    ArrayList<Component> splashPotionLore(CustomPotionEffectProperty property);
 
     /**
      * get the lore of the splash potion item
      * used when create the potion item by CustomPotionManager#getSplashPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the display name
      */
-    Component splashPotionDisplayName(int duration, int amplifier, int checkInterval);
+    Component splashPotionDisplayName(CustomPotionEffectProperty property);
 
     /**
      * get the color of the splash potion item
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the potion effect property
      * @return the color
      */
-    Color splashPotionColor(int duration, int amplifier, int checkInterval);
+    Color splashPotionColor(CustomPotionEffectProperty property);
 
     /**
      * if the splash potion has enchanted glow
+     * used when create the potion item by CustomPotionManager#getSplashPotion(...)
      *
+     * @param property the potion effect property
      * @return true if the splash potion has enchanted glow
      */
-    default boolean splashPotionEnchanted() {
+    default boolean splashPotionEnchanted(CustomPotionEffectProperty property) {
         return true;
     }
 
@@ -239,49 +218,48 @@ public interface CustomPotionEffectType {
      * get the lore of the lingering potion item
      * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the lore
      */
-    ArrayList<Component> lingeringPotionLore(int duration, int amplifier, int checkInterval);
+    ArrayList<Component> lingeringPotionLore(CustomPotionEffectProperty property);
 
     /**
      * get the lore of the lingering potion item
      * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the property of the potion effect
      * @return the display name
      */
-    Component lingeringPotionDisplayName(int duration, int amplifier, int checkInterval);
+    Component lingeringPotionDisplayName(CustomPotionEffectProperty property);
 
     /**
      * get the color of the lingering potion item
+     * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
      *
-     * @param duration      the duration of the potion effect.
-     * @param amplifier     the amplifier of the potion effect.
-     * @param checkInterval the check interval of the potion effect.
+     * @param property the potion effect property
      * @return the color
      */
-    Color lingeringPotionColor(int duration, int amplifier, int checkInterval);
+    Color lingeringPotionColor(CustomPotionEffectProperty property);
 
     /**
      * if the lingering potion has enchanted glow
+     * used when create the potion item by CustomPotionManager#getLingeringPotion(...)
      *
+     * @param property the potion effect property
      * @return true if the lingering potion has enchanted glow
      */
-    default boolean lingeringPotionEnchanted() {
+    default boolean lingeringPotionEnchanted(CustomPotionEffectProperty property) {
         return true;
     }
 
     /**
      * the initial duration which this cloud will exist for (in ticks).
+     * used when
      *
+     * @param property the potion effect property
      * @return the duration ticks
      */
-    default int areaEffectCloudDuration() {
+    default int areaEffectCloudDuration(CustomPotionEffectProperty property) {
         return VANILLA_AREA_EFFECT_CLOUD_DURATION;
     }
 
@@ -289,18 +267,20 @@ public interface CustomPotionEffectType {
      * the amount that the duration of this cloud will INCREASE by when it applies an effect to an entity.
      * make this value negative to make the duration decrease.
      *
+     * @param property the potion effect property
      * @return the duration ticks on use.
      */
-    default int areaEffectCloudDurationOnUse() {
+    default int areaEffectCloudDurationOnUse(CustomPotionEffectProperty property) {
         return VANILLA_AREA_EFFECT_CLOUD_DURATION_ON_USE;
     }
 
     /**
      * the initial radius of the cloud.
      *
+     * @param property the potion effect property
      * @return the radius
      */
-    default float areaEffectCloudRadius() {
+    default float areaEffectCloudRadius(CustomPotionEffectProperty property) {
         return VANILLA_AREA_EFFECT_CLOUD_RADIUS;
     }
 
@@ -308,9 +288,10 @@ public interface CustomPotionEffectType {
      * the amount that the radius of this cloud will INCREASE by when it applies an effect to an entity.
      * make this value negative to make the radius decrease.
      *
+     * @param property the potion effect property
      * @return the radius on use.
      */
-    default float areaEffectCloudRadiusOnUse() {
+    default float areaEffectCloudRadiusOnUse(CustomPotionEffectProperty property) {
         return VANILLA_AREA_EFFECT_CLOUD_RADIUS_ON_USE;
     }
 
@@ -318,18 +299,21 @@ public interface CustomPotionEffectType {
      * the amount that the radius of this cloud will INCREASE by each tick.
      * make this value negative to make it decrease.
      *
+     * @param property the potion effect property
      * @return the radius on tick.
      */
-    default float areaEffectCloudRadiusPerTick() {
+    default float areaEffectCloudRadiusPerTick(CustomPotionEffectProperty property) {
         return VANILLA_AREA_EFFECT_CLOUD_RADIUS_PER_TICK;
     }
 
     /**
      * the time that an entity will be immune from subsequent exposure.
      *
+     * @param property the potion effect property
      * @return the time in ticks.
      */
-    default int areaEffectCloudReapplicationDelay() {
+    default int areaEffectCloudReapplicationDelay(CustomPotionEffectProperty property) {
         return DEFAULT_AREA_EFFECT_CLOUD_REAPPLICATION_DELAY;
     }
+
 }
