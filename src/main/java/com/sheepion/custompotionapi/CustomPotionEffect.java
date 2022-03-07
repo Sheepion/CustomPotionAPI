@@ -9,6 +9,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 
 import static com.sheepion.custompotionapi.CustomPotionManager.getActiveEffectsOnEntity;
+import static com.sheepion.custompotionapi.CustomPotionManager.getCustomPotionEffect;
 
 /**
  * project name: CustomPotionAPI
@@ -137,20 +138,18 @@ public class CustomPotionEffect implements Runnable {
      * @return true if success, false if failed
      */
     public boolean apply(@NotNull LivingEntity entity) {
-        CustomPotionAPI.getInstance().getLogger().info("apply effect to entity");
-        if (effectType.canBeApplied(entity)) {
-            CustomPotionEffect potionEffect = copy();
-            potionEffect.setEntity(entity);
-            potionEffect.setTask(CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimer(CustomPotionAPI.getInstance(), potionEffect, property.getDelay(), property.getCheckInterval()));
-
-            CustomPotionAPI.getInstance().getLogger().info("task set");
-            if (!getActiveEffectsOnEntity().containsKey(entity.getUniqueId())) {
-                getActiveEffectsOnEntity().put(entity.getUniqueId(), new ArrayList<>());
-            }
-            getActiveEffectsOnEntity().get(entity.getUniqueId()).add(potionEffect);
-            return true;
+        if (!effectType.canBeApplied(entity)) {
+            return false;
         }
-        return false;
+        CustomPotionEffect potionEffect = copy();
+        potionEffect.setEntity(entity);
+        potionEffect.getEffectType().beforeApply(entity, potionEffect.property);
+        potionEffect.setTask(CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimer(CustomPotionAPI.getInstance(), potionEffect, property.getDelay(), property.getCheckInterval()));
+        if (!getActiveEffectsOnEntity().containsKey(entity.getUniqueId())) {
+            getActiveEffectsOnEntity().put(entity.getUniqueId(), new ArrayList<>());
+        }
+        getActiveEffectsOnEntity().get(entity.getUniqueId()).add(potionEffect);
+        return true;
     }
 
     /**
@@ -188,24 +187,20 @@ public class CustomPotionEffect implements Runnable {
         if (entity instanceof Player && !((Player) entity).isOnline()) {
             //don't use cancel() because it will remove the effect from the list.
             //keep the instance in the list, so that it can be applied again when the player comes back online.
-            CustomPotionAPI.getInstance().getLogger().info("canceled. player offline");
             task.cancel();
             return;
         }
         property.setRestDuration(property.getRestDuration() - property.getCheckInterval());
         if (property.getRestDuration() < 0) {
-            CustomPotionAPI.getInstance().getLogger().info("canceled. duration<0");
             cancel();
             return;
         }
         if (entity.isDead() || !entity.isValid()) {
-            CustomPotionAPI.getInstance().getLogger().info("canceled. entity is dead or invalid");
             cancel();
             return;
         }
         effectType.effect(entity, property);
         if (property.getRestDuration() == 0) {
-            CustomPotionAPI.getInstance().getLogger().info("canceled. duration==0");
             cancel();
         }
     }

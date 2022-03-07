@@ -43,6 +43,7 @@ public class CustomPotionEffectProperty {
 
     /**
      * get the mutable potion item that carries the effect
+     *
      * @return the potion item
      */
     public ItemStack getPotion() {

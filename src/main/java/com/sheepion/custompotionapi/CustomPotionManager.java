@@ -7,11 +7,9 @@ import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.AreaEffectCloudApplyEvent;
-import org.bukkit.event.entity.LingeringPotionSplashEvent;
-import org.bukkit.event.entity.PotionSplashEvent;
-import org.bukkit.event.entity.ProjectileHitEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemFlag;
@@ -124,6 +122,47 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
+     * spawn area effect cloud when creeper explodes
+     * @param event the event
+     */
+    @EventHandler(priority = EventPriority.HIGH,ignoreCancelled = true)
+    public void onEntityExplode(EntityExplodeEvent event) {
+        Entity entity = event.getEntity();
+        if (entity instanceof Creeper) {
+            Creeper creeper = (Creeper) entity;
+            if (getActivePotionEffects(creeper.getUniqueId()).size() > 0) {
+                for (CustomPotionEffect potionEffect : getActivePotionEffects(creeper.getUniqueId())) {
+                    if(potionEffect.getEffectType().spawnAreaEffectCloudOnCreeperExplosion(creeper,potionEffect.getProperty())) {
+                        AreaEffectCloud areaEffectCloud = (AreaEffectCloud) creeper.getWorld().spawnEntity(creeper.getLocation(), EntityType.AREA_EFFECT_CLOUD, CreatureSpawnEvent.SpawnReason.EXPLOSION);
+                        areaEffectCloud.setColor(potionEffect.getEffectType().lingeringPotionColor(potionEffect.getProperty()));
+                        areaEffectCloud.addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS,0,0),true);
+                        setAreaEffectCloudProperties(potionEffect, areaEffectCloud);
+                        areaEffectClouds.put(areaEffectCloud, potionEffect);
+                    }
+                }
+            }
+        }
+
+    }
+
+    /**
+     * set the properties of the area effect cloud<br>
+     * note: this WILL NOT add the area effect cloud to the areaEffectClouds map
+     *
+     * @param potionEffect the potion effect
+     * @param areaEffectCloud the area effect cloud
+     */
+    private static void setAreaEffectCloudProperties(CustomPotionEffect potionEffect, AreaEffectCloud areaEffectCloud) {
+        CustomPotionEffectProperty property = potionEffect.getProperty();
+        areaEffectCloud.setDuration(potionEffect.getEffectType().areaEffectCloudDuration(property));
+        areaEffectCloud.setDurationOnUse(potionEffect.getEffectType().areaEffectCloudDurationOnUse(property));
+        areaEffectCloud.setRadius(potionEffect.getEffectType().areaEffectCloudRadius(property));
+        areaEffectCloud.setRadiusOnUse(potionEffect.getEffectType().areaEffectCloudRadiusOnUse(property));
+        areaEffectCloud.setRadiusPerTick(potionEffect.getEffectType().areaEffectCloudRadiusPerTick(property));
+        areaEffectCloud.setReapplicationDelay(potionEffect.getEffectType().areaEffectCloudReapplicationDelay(property));
+    }
+
+    /**
      * register a custom potion effect type
      * this will register the listeners either if your class implemented Listener interface
      *
@@ -232,15 +271,6 @@ public class CustomPotionManager implements Listener {
         if (customEffect == null) {
             return;
         }
-        CustomPotionAPI.getInstance().getLogger().info("customEffect: " + customEffect);
-        CustomPotionAPI.getInstance().getLogger().info("duration: " + customEffect.getDuration());
-        CustomPotionAPI.getInstance().getLogger().info("amplifier: " + customEffect.getAmplifier());
-        CustomPotionAPI.getInstance().getLogger().info("checkInterval: " + customEffect.getCheckInterval());
-        CustomPotionAPI.getInstance().getLogger().info("delay: " + customEffect.getDelay());
-        for (LivingEntity affectedEntity : event.getAffectedEntities()) {
-            CustomPotionAPI.getInstance().getLogger().info("affectedEntity: " + affectedEntity.getUniqueId());
-            CustomPotionAPI.getInstance().getLogger().info("success:" + customEffect.apply(affectedEntity));
-        }
         event.getAffectedEntities().forEach(customEffect::apply);
     }
 
@@ -256,13 +286,7 @@ public class CustomPotionManager implements Listener {
             return;
         }
         AreaEffectCloud areaEffectCloud = event.getAreaEffectCloud();
-        CustomPotionEffectProperty property = customPotionEffect.getProperty();
-        areaEffectCloud.setDuration(customPotionEffect.getEffectType().areaEffectCloudDuration(property));
-        areaEffectCloud.setDurationOnUse(customPotionEffect.getEffectType().areaEffectCloudDurationOnUse(property));
-        areaEffectCloud.setRadius(customPotionEffect.getEffectType().areaEffectCloudRadius(property));
-        areaEffectCloud.setRadiusOnUse(customPotionEffect.getEffectType().areaEffectCloudRadiusOnUse(property));
-        areaEffectCloud.setRadiusPerTick(customPotionEffect.getEffectType().areaEffectCloudRadiusPerTick(property));
-        areaEffectCloud.setReapplicationDelay(customPotionEffect.getEffectType().areaEffectCloudReapplicationDelay(property));
+        setAreaEffectCloudProperties(customPotionEffect, areaEffectCloud);
         areaEffectClouds.put(event.getAreaEffectCloud(), customPotionEffect);
     }
 
@@ -310,10 +334,22 @@ public class CustomPotionManager implements Listener {
         if (customPotionEffectType == null) {
             return null;
         }
-        int duration = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER);
-        int checkInterval = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_check_interval"), PersistentDataType.INTEGER);
-        int amplifier = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_amplifier"), PersistentDataType.INTEGER);
-        int delay = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_delay"), PersistentDataType.INTEGER);
+        Integer duration = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER);
+        if (duration == null) {
+            duration = 0;
+        }
+        Integer checkInterval = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_check_interval"), PersistentDataType.INTEGER);
+        if (checkInterval == null) {
+            checkInterval = 20;
+        }
+        Integer amplifier = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_amplifier"), PersistentDataType.INTEGER);
+        if (amplifier == null) {
+            amplifier = 0;
+        }
+        Integer delay = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_delay"), PersistentDataType.INTEGER);
+        if (delay == null) {
+            delay = 0;
+        }
         return new CustomPotionEffect(customPotionEffectType, item, duration, amplifier, checkInterval, delay);
     }
 

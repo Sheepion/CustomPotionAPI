@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import org.bukkit.Color;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.projectiles.ProjectileSource;
@@ -71,13 +72,33 @@ public interface CustomPotionEffectType {
      * if the effect can be removed by milk
      * this will be automatically called by CustomPotionManager when entity drinks milk.
      *
-     * @param entity        the entity that drinks milk.
-     * @param property      the property of the potion effect that removed by milk
+     * @param entity   the entity that drinks milk.
+     * @param property the property of the potion effect that removed by milk
      * @return true if the effect can be removed by milk
      */
     boolean canBeRemovedByMilk(LivingEntity entity, CustomPotionEffectProperty property);
 
-    //TODO: 添加对于药水重复添加的解决方法，比如叠加、替换、移除
+    /**
+     * if the area effect cloud should spawn when the creepers with the effect exploded.
+     * @param creeper the creeper that exploded
+     * @param property the property of the potion effect that applied to the creeper
+     * @return true if the area effect cloud should spawn when the creepers with the effect exploded.
+     */
+    default boolean spawnAreaEffectCloudOnCreeperExplosion(Creeper creeper,CustomPotionEffectProperty property){return true;}
+
+    /**
+     * the things you want to do before the potion effect is applied to the entity<br>
+     * this method will be called only once before the effect is applied to the entity<br>
+     * if you want to cancel this effect for some reason, try set the rest duration in the property below 0.<br>
+     * if you want to cancel other effects, first you need to get the effect by CustomPotionManager#getActivePotionEffects(UUID)<br>
+     * <p>
+     * you may use this method to do some things like:<br>
+     * - deal with the conflict with other potion effects<br>
+     *
+     * @param entity   the entity that is going to be applied the potion effect
+     * @param property the potion effect's property
+     */
+    void beforeApply(LivingEntity entity, CustomPotionEffectProperty property);
 
     /**
      * the potion effect to the entity<br>
