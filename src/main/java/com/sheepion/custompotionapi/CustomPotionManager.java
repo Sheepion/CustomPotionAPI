@@ -420,10 +420,10 @@ public class CustomPotionManager implements Listener {
      * @return the custom potion item
      */
     public static ItemStack getPotion(Material material, PotionType potionType) {
-        ItemStack bottle = new ItemStack(Material.POTION, 1);
+        ItemStack bottle = new ItemStack(material, 1);
         ItemMeta meta = bottle.getItemMeta();
         PotionMeta potionMeta = (PotionMeta) meta;
-        PotionData potionData = new PotionData(PotionType.WATER);
+        PotionData potionData = new PotionData(potionType);
         potionMeta.setBasePotionData(potionData);
         bottle.setItemMeta(meta);
         return bottle;
