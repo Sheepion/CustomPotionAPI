@@ -3,13 +3,14 @@ package com.sheepion.custompotionapi;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitTask;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 
 import static com.sheepion.custompotionapi.CustomPotionManager.getActiveEffectsOnEntity;
-import static com.sheepion.custompotionapi.CustomPotionManager.getCustomPotionEffect;
 
 /**
  * project name: CustomPotionAPI
@@ -108,14 +109,15 @@ public class CustomPotionEffect implements Runnable {
      *
      * @param effectType    effect type
      * @param potion        the potion item that brings the effect to the entity
+     * @param shooter       the shooter of the potion
      * @param duration      duration in ticks
      * @param amplifier     amplifier
      * @param checkInterval run the effect() method in the effect type every checkInterval ticks
      * @param delay         delay in ticks
      */
-    public CustomPotionEffect(@NotNull CustomPotionEffectType effectType, ItemStack potion, int duration, int amplifier, int checkInterval, int delay) {
+    public CustomPotionEffect(@NotNull CustomPotionEffectType effectType, ItemStack potion, @Nullable ProjectileSource shooter, int duration, int amplifier, int checkInterval, int delay) {
         this.effectType = effectType;
-        this.property = new CustomPotionEffectProperty(potion, duration, duration, amplifier, false, checkInterval, delay);
+        this.property = new CustomPotionEffectProperty(potion, shooter, duration, duration, amplifier, false, checkInterval, delay);
     }
 
     /**
@@ -138,7 +140,7 @@ public class CustomPotionEffect implements Runnable {
      * @return true if success, false if failed
      */
     public boolean apply(@NotNull LivingEntity entity) {
-        if (!effectType.canBeApplied(entity)) {
+        if (!effectType.canBeApplied(entity, property)) {
             return false;
         }
         CustomPotionEffect potionEffect = copy();
@@ -155,17 +157,13 @@ public class CustomPotionEffect implements Runnable {
     /**
      * add effect to entity
      *
-     * @param effectType    effect type
-     * @param entity        entity to add effect to
-     * @param potion        the potion item that brings the effect to the entity
-     * @param duration      duration in ticks
-     * @param amplifier     amplifier
-     * @param checkInterval run the effect() method in the effect type every checkInterval ticks
-     * @param delay         delay before the effect take effect
+     * @param effectType effect type
+     * @param entity     entity to add effect to
+     * @param property   effect property
      * @return true if success, false if failed
      */
-    public static boolean apply(CustomPotionEffectType effectType, LivingEntity entity, ItemStack potion, int duration, int amplifier, int checkInterval, int delay) {
-        CustomPotionEffect potionEffect = new CustomPotionEffect(effectType, potion, duration, amplifier, checkInterval, delay);
+    public static boolean apply(CustomPotionEffectType effectType, LivingEntity entity, CustomPotionEffectProperty property) {
+        CustomPotionEffect potionEffect = new CustomPotionEffect(effectType, property);
         return potionEffect.apply(entity);
     }
 

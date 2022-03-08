@@ -3,15 +3,9 @@ package com.sheepion.custompotionapi;
 import io.papermc.paper.potion.PotionMix;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.block.Block;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.*;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
+import org.bukkit.entity.AreaEffectCloud;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -43,7 +37,7 @@ public class CustomPotionManager implements Listener {
     private static final HashMap<AreaEffectCloud, CustomPotionEffect> areaEffectClouds = new HashMap<>();
 
     static {
-        CustomPotionAPI.getInstance().getServer().getPluginManager().registerEvents(new CustomPotionManager(), CustomPotionAPI.getInstance());
+        CustomPotionAPI.getInstance().getServer().getPluginManager().registerEvents(new CustomPotionListener(), CustomPotionAPI.getInstance());
 
         //clear dead area effect clouds task
         CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimerAsynchronously(CustomPotionAPI.getInstance(), () -> {
@@ -68,6 +62,15 @@ public class CustomPotionManager implements Listener {
      * used to store all the custom potion effects an entity has
      */
     private static final HashMap<UUID, ArrayList<CustomPotionEffect>> activeEffectsOnEntity = new HashMap<>();
+
+    /**
+     * return the custom potion effect on area effect clouds.
+     *
+     * @return the area effect clouds map.
+     */
+    public static HashMap<AreaEffectCloud, CustomPotionEffect> getAreaEffectClouds() {
+        return areaEffectClouds;
+    }
 
     /**
      * @return the active effects on entity.
@@ -107,7 +110,7 @@ public class CustomPotionManager implements Listener {
         if (customPotionEffects == null) {
             return new ArrayList<>();
         }
-        return (ArrayList<CustomPotionEffect>) customPotionEffects.clone();
+        return new ArrayList<>(customPotionEffects);
     }
 
     /**
@@ -122,37 +125,13 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
-     * spawn area effect cloud when creeper explodes
-     * @param event the event
-     */
-    @EventHandler(priority = EventPriority.HIGH,ignoreCancelled = true)
-    public void onEntityExplode(EntityExplodeEvent event) {
-        Entity entity = event.getEntity();
-        if (entity instanceof Creeper) {
-            Creeper creeper = (Creeper) entity;
-            if (getActivePotionEffects(creeper.getUniqueId()).size() > 0) {
-                for (CustomPotionEffect potionEffect : getActivePotionEffects(creeper.getUniqueId())) {
-                    if(potionEffect.getEffectType().spawnAreaEffectCloudOnCreeperExplosion(creeper,potionEffect.getProperty())) {
-                        AreaEffectCloud areaEffectCloud = (AreaEffectCloud) creeper.getWorld().spawnEntity(creeper.getLocation(), EntityType.AREA_EFFECT_CLOUD, CreatureSpawnEvent.SpawnReason.EXPLOSION);
-                        areaEffectCloud.setColor(potionEffect.getEffectType().lingeringPotionColor(potionEffect.getProperty()));
-                        areaEffectCloud.addCustomEffect(new PotionEffect(PotionEffectType.BLINDNESS,0,0),true);
-                        setAreaEffectCloudProperties(potionEffect, areaEffectCloud);
-                        areaEffectClouds.put(areaEffectCloud, potionEffect);
-                    }
-                }
-            }
-        }
-
-    }
-
-    /**
      * set the properties of the area effect cloud<br>
      * note: this WILL NOT add the area effect cloud to the areaEffectClouds map
      *
-     * @param potionEffect the potion effect
+     * @param potionEffect    the potion effect
      * @param areaEffectCloud the area effect cloud
      */
-    private static void setAreaEffectCloudProperties(CustomPotionEffect potionEffect, AreaEffectCloud areaEffectCloud) {
+    public static void setAreaEffectCloudProperties(CustomPotionEffect potionEffect, AreaEffectCloud areaEffectCloud) {
         CustomPotionEffectProperty property = potionEffect.getProperty();
         areaEffectCloud.setDuration(potionEffect.getEffectType().areaEffectCloudDuration(property));
         areaEffectCloud.setDurationOnUse(potionEffect.getEffectType().areaEffectCloudDurationOnUse(property));
@@ -181,126 +160,6 @@ public class CustomPotionManager implements Listener {
             for (PotionMix potionMix : potionMixes) {
                 CustomPotionAPI.getInstance().getServer().getPotionBrewer().removePotionMix(potionMix.getKey());
                 CustomPotionAPI.getInstance().getServer().getPotionBrewer().addPotionMix(potionMix);
-            }
-        }
-    }
-
-    /**
-     * apply the potion effect to the player when the player consume the potion
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerItemConsume(PlayerItemConsumeEvent event) {
-        if (event.getItem().getType() != Material.POTION) {
-            return;
-        }
-        CustomPotionEffect customEffect = getCustomPotionEffect(event.getItem());
-        if (customEffect == null) {
-            return;
-        }
-        customEffect.apply(event.getPlayer());
-    }
-
-
-    /**
-     * remove the potion effect when player drinks milk
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onPlayerDrinksMilk(PlayerItemConsumeEvent event) {
-        if (event.getItem().getType() != Material.MILK_BUCKET) {
-            return;
-        }
-        Player player = event.getPlayer();
-        getActivePotionEffects(event.getPlayer().getUniqueId()).forEach(customPotionEffect -> {
-            int duration = customPotionEffect.getDuration();
-            int checkInterval = customPotionEffect.getCheckInterval();
-            int amplifier = customPotionEffect.getAmplifier();
-            if (customPotionEffect.getEffectType().canBeRemovedByMilk(player, customPotionEffect.getProperty())) {
-                customPotionEffect.cancel();
-            }
-        });
-    }
-
-    /**
-     * handle potion hit block effect and potion hit entity effect
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onProjectileHit(ProjectileHitEvent event) {
-        if (!(event.getEntity() instanceof ThrownPotion)) {
-            return;
-        }
-        ThrownPotion thrownPotion = (ThrownPotion) event.getEntity();
-        CustomPotionEffect customEffect = getCustomPotionEffect(thrownPotion.getItem());
-        if (customEffect == null) {
-            return;
-        }
-        CustomPotionEffectType customPotionEffectType = customEffect.getEffectType();
-        //handle potion hit block effect
-        Block block = event.getHitBlock();
-        if (block != null) {
-            if (thrownPotion.getItem().getType() == Material.SPLASH_POTION) {
-                customPotionEffectType.splashPotionHitBlockEffect(thrownPotion.getShooter(), block, customEffect.getProperty());
-            } else if (thrownPotion.getItem().getType() == Material.LINGERING_POTION) {
-                customPotionEffectType.lingeringPotionHitBlockEffect(thrownPotion.getShooter(), block, customEffect.getProperty());
-            }
-        }
-        //handle potion hit entity effect
-        Entity entity = event.getHitEntity();
-        if (entity != null) {
-            if (thrownPotion.getItem().getType() == Material.SPLASH_POTION) {
-                customPotionEffectType.splashPotionHitEntityEffect(thrownPotion.getShooter(), entity, customEffect.getProperty());
-            } else if (thrownPotion.getItem().getType() == Material.LINGERING_POTION) {
-                customPotionEffectType.lingeringPotionHitEntityEffect(thrownPotion.getShooter(), entity, customEffect.getProperty());
-            }
-        }
-    }
-
-    /**
-     * apply the potion effect to entities
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onPotionSplash(PotionSplashEvent event) {
-        CustomPotionEffect customEffect = getCustomPotionEffect(event.getEntity().getItem());
-        if (customEffect == null) {
-            return;
-        }
-        event.getAffectedEntities().forEach(customEffect::apply);
-    }
-
-    /**
-     * store the potion effect on the area effect cloud.
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onLingeringPotionSplash(LingeringPotionSplashEvent event) {
-        CustomPotionEffect customPotionEffect = getCustomPotionEffect(event.getEntity().getItem());
-        if (customPotionEffect == null) {
-            return;
-        }
-        AreaEffectCloud areaEffectCloud = event.getAreaEffectCloud();
-        setAreaEffectCloudProperties(customPotionEffect, areaEffectCloud);
-        areaEffectClouds.put(event.getAreaEffectCloud(), customPotionEffect);
-    }
-
-    /**
-     * apply the potion effect to entities that are affected by the area effect cloud
-     *
-     * @param event the event
-     */
-    @EventHandler(ignoreCancelled = true)
-    public void onAreaEffectCloudApply(AreaEffectCloudApplyEvent event) {
-        CustomPotionEffect customPotionEffect = areaEffectClouds.get(event.getEntity());
-        if (customPotionEffect != null) {
-            for (LivingEntity affectedEntity : event.getAffectedEntities()) {
-                customPotionEffect.apply(affectedEntity);
             }
         }
     }
@@ -350,7 +209,7 @@ public class CustomPotionManager implements Listener {
         if (delay == null) {
             delay = 0;
         }
-        return new CustomPotionEffect(customPotionEffectType, item, duration, amplifier, checkInterval, delay);
+        return new CustomPotionEffect(customPotionEffectType, item, null, duration, amplifier, checkInterval, delay);
     }
 
     /**
@@ -373,7 +232,7 @@ public class CustomPotionManager implements Listener {
         //set the name, lore, color, enchant glow.
         for (CustomPotionEffectType potionEffectType : customPotionEffectTypes) {
             if (potionEffectType.getKey().equals(customPotionEffectType)) {
-                CustomPotionEffectProperty property = new CustomPotionEffectProperty(result, duration, duration, amplifier, false, checkInterval, delay);
+                CustomPotionEffectProperty property = new CustomPotionEffectProperty(result, null, duration, duration, amplifier, false, checkInterval, delay);
                 if (material.equals(Material.POTION)) {
                     ((PotionMeta) meta).setColor(potionEffectType.potionColor(property));
                     meta.displayName(potionEffectType.potionDisplayName(property));
@@ -471,20 +330,4 @@ public class CustomPotionManager implements Listener {
         return getPotion(Material.LINGERING_POTION, customPotionEffectType, duration, amplifier, checkInterval, delay);
     }
 
-    /**
-     * apply unfinished potion effect to the player
-     *
-     * @param event the player join event
-     */
-    @EventHandler(ignoreCancelled = true)
-    private void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        if (!activeEffectsOnEntity.containsKey(player.getUniqueId())) {
-            activeEffectsOnEntity.put(player.getUniqueId(), new ArrayList<>());
-        }
-        for (CustomPotionEffect customPotionEffect : (ArrayList<CustomPotionEffect>) activeEffectsOnEntity.getOrDefault(player.getUniqueId(), new ArrayList<>()).clone()) {
-            customPotionEffect.apply(player);
-            activeEffectsOnEntity.get(player.getUniqueId()).remove(customPotionEffect);
-        }
-    }
 }

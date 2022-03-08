@@ -8,7 +8,6 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Creeper;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
-import org.bukkit.projectiles.ProjectileSource;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -22,6 +21,7 @@ import java.util.ArrayList;
  *
  * @author Sheepion
  */
+@SuppressWarnings({"unused", "SameReturnValue"})
 public interface CustomPotionEffectType {
     /**
      * the vanilla area effect cloud's duration (600 ticks, 30 seconds)
@@ -63,10 +63,11 @@ public interface CustomPotionEffectType {
     /**
      * check if the entity can be applied by this potion effect
      *
-     * @param entity the entity to check
+     * @param entity   the entity to check
+     * @param property the property of the potion effect
      * @return true if the entity can be applied by this potion effect
      */
-    boolean canBeApplied(LivingEntity entity);
+    boolean canBeApplied(LivingEntity entity, CustomPotionEffectProperty property);
 
     /**
      * if the effect can be removed by milk
@@ -114,44 +115,40 @@ public interface CustomPotionEffectType {
      * the potion effect when splash potion hit block
      * this method will be called automatically when the splash potion hit the block.
      *
-     * @param shooter  the shooter of the splash potion
      * @param block    the block that the potion hit
      * @param property the property of the potion effect that hit the block
      */
-    default void splashPotionHitBlockEffect(ProjectileSource shooter, Block block, CustomPotionEffectProperty property) {
+    default void splashPotionHitBlockEffect(Block block, CustomPotionEffectProperty property) {
     }
 
     /**
      * the potion effect when lingering potion hit block
      * this method will be called automatically when the lingering potion hit the block.
      *
-     * @param shooter  the shooter of the lingering potion
      * @param block    the block that the potion hit
      * @param property the property of the potion effect that hit the block
      */
-    default void lingeringPotionHitBlockEffect(ProjectileSource shooter, Block block, CustomPotionEffectProperty property) {
+    default void lingeringPotionHitBlockEffect(Block block, CustomPotionEffectProperty property) {
     }
 
     /**
      * the potion effect when splash potion hit entity
      * this method will be called automatically when the splash potion hit the entity.
      *
-     * @param shooter  the shooter of the potion
      * @param entity   the block that the potion hit
      * @param property the property of the potion effect that hit the entity
      */
-    default void splashPotionHitEntityEffect(ProjectileSource shooter, Entity entity, CustomPotionEffectProperty property) {
+    default void splashPotionHitEntityEffect(Entity entity, CustomPotionEffectProperty property) {
     }
 
     /**
      * the potion effect when lingering potion hit entity<br>
      * this method will be called automatically when the lingering potion hit the entity.
      *
-     * @param shooter  the shooter of the potion
      * @param entity   the entity that the potion hit
      * @param property the property of the potion effect that hit the entity
      */
-    default void lingeringPotionHitEntityEffect(ProjectileSource shooter, Entity entity, CustomPotionEffectProperty property) {
+    default void lingeringPotionHitEntityEffect(Entity entity, CustomPotionEffectProperty property) {
     }
 
     /**

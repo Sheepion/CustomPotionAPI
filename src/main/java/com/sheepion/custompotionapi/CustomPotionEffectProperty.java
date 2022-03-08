@@ -1,6 +1,7 @@
 package com.sheepion.custompotionapi;
 
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.ProjectileSource;
 import org.jetbrains.annotations.Nullable;
 
 /**
@@ -42,6 +43,11 @@ public class CustomPotionEffectProperty {
     private final int delay;
 
     /**
+     * the shooter of the splash/lingering potion
+     */
+    private @Nullable ProjectileSource shooter;
+
+    /**
      * get the mutable potion item that carries the effect
      *
      * @return the potion item
@@ -58,11 +64,12 @@ public class CustomPotionEffectProperty {
      * @param delay         the ticks before the effect starts.
      */
     public CustomPotionEffectProperty(@Nullable ItemStack potion, int duration, int amplifier, int checkInterval, int delay) {
-        this(potion, duration, duration, amplifier, false, checkInterval, delay);
+        this(potion, null, duration, duration, amplifier, false, checkInterval, delay);
     }
 
     /**
      * @param potion        the potion item that carries the effect
+     * @param shooter       the shooter of the splash/lingering potion
      * @param duration      the effect's duration
      * @param restDuration  the effect's rest duration
      * @param amplifier     the effect's amplifier
@@ -70,8 +77,9 @@ public class CustomPotionEffectProperty {
      * @param checkInterval the effect's check interval
      * @param delay         the ticks before the effect starts.
      */
-    public CustomPotionEffectProperty(@Nullable ItemStack potion, int duration, int restDuration, int amplifier, boolean ambient, int checkInterval, int delay) {
+    public CustomPotionEffectProperty(@Nullable ItemStack potion, @Nullable ProjectileSource shooter, int duration, int restDuration, int amplifier, boolean ambient, int checkInterval, int delay) {
         this.potion = potion;
+        this.shooter = shooter;
         this.duration = duration;
         this.restDuration = restDuration;
         this.amplifier = amplifier;
@@ -152,7 +160,26 @@ public class CustomPotionEffectProperty {
         return delay;
     }
 
+    /**
+     * @return the shooter of the splash/lingering potion
+     */
+    public @Nullable ProjectileSource getShooter() {
+        return shooter;
+    }
+
+    /**
+     * set the shooter of the splash/lingering potion
+     *
+     * @param shooter the new shooter
+     */
+    public void setShooter(@Nullable ProjectileSource shooter) {
+        this.shooter = shooter;
+    }
+
+    /**
+     * @return a copy of this property
+     */
     public CustomPotionEffectProperty clone() {
-        return new CustomPotionEffectProperty(potion, duration, restDuration, amplifier, ambient, checkInterval, delay);
+        return new CustomPotionEffectProperty(potion, shooter, duration, restDuration, amplifier, ambient, checkInterval, delay);
     }
 }
