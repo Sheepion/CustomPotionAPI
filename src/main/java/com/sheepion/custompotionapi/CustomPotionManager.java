@@ -12,10 +12,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
-import org.bukkit.potion.PotionData;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.potion.PotionType;
+import org.bukkit.potion.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,9 +21,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.UUID;
 
+import static com.sheepion.custompotionapi.PropertyKey.*;
+
 /**
- * project name: CustomPotionAPI
- * package: com.sheepion.custompotionapi
+ * Everything you need to manage your potions.
  *
  * @author Sheepion
  */
@@ -38,7 +36,6 @@ public class CustomPotionManager implements Listener {
 
     static {
         CustomPotionAPI.getInstance().getServer().getPluginManager().registerEvents(new CustomPotionListener(), CustomPotionAPI.getInstance());
-
         //clear dead area effect clouds task
         CustomPotionAPI.getInstance().getServer().getScheduler().runTaskTimerAsynchronously(CustomPotionAPI.getInstance(), () -> {
             ArrayList<AreaEffectCloud> toRemove = new ArrayList<>();
@@ -80,27 +77,25 @@ public class CustomPotionManager implements Listener {
     }
 
     /**
-     * get the specific effect instance applied on the entity
+     * get the specific effect instance applied on the entity.
      *
      * @param uuid                   the entity uuid
      * @param customPotionEffectType the potion effect type
-     * @return the potion effect if exists, null otherwise
+     * @return all the effects with the specific type that applied to the entity.
      */
-    public static @Nullable CustomPotionEffect getActivePotionEffect(UUID uuid, CustomPotionEffectType customPotionEffectType) {
+    public static @NotNull ArrayList<CustomPotionEffect> getActivePotionEffect(UUID uuid, @NotNull CustomPotionEffectType customPotionEffectType) {
         ArrayList<CustomPotionEffect> customPotionEffects = activeEffectsOnEntity.get(uuid);
-        if (customPotionEffects == null) {
-            return null;
-        }
+        ArrayList<CustomPotionEffect> result = new ArrayList<>();
         for (CustomPotionEffect customPotionEffect : customPotionEffects) {
             if (customPotionEffect.getEffectType().getKey().equals(customPotionEffectType.getKey())) {
-                return customPotionEffect;
+                result.add(customPotionEffect);
             }
         }
-        return null;
+        return result;
     }
 
     /**
-     * get a shallow copy of all the custom potion effects applied on the entity
+     * get a shallow copy of all the custom potion effects applied on the entity.
      *
      * @param uuid the entity uuid
      * @return the potion effects. the array list would be empty if the entity has no potion effects
@@ -121,7 +116,7 @@ public class CustomPotionManager implements Listener {
      * @return true if the entity has the potion effect, false otherwise
      */
     public static boolean isPotionEffectActive(UUID uuid, CustomPotionEffectType customPotionEffectType) {
-        return getActivePotionEffect(uuid, customPotionEffectType) != null;
+        return getActivePotionEffect(uuid, customPotionEffectType).isEmpty();
     }
 
     /**
@@ -133,12 +128,13 @@ public class CustomPotionManager implements Listener {
      */
     public static void setAreaEffectCloudProperties(CustomPotionEffect potionEffect, AreaEffectCloud areaEffectCloud) {
         CustomPotionEffectProperty property = potionEffect.getProperty();
-        areaEffectCloud.setDuration(potionEffect.getEffectType().areaEffectCloudDuration(property));
-        areaEffectCloud.setDurationOnUse(potionEffect.getEffectType().areaEffectCloudDurationOnUse(property));
-        areaEffectCloud.setRadius(potionEffect.getEffectType().areaEffectCloudRadius(property));
-        areaEffectCloud.setRadiusOnUse(potionEffect.getEffectType().areaEffectCloudRadiusOnUse(property));
-        areaEffectCloud.setRadiusPerTick(potionEffect.getEffectType().areaEffectCloudRadiusPerTick(property));
-        areaEffectCloud.setReapplicationDelay(potionEffect.getEffectType().areaEffectCloudReapplicationDelay(property));
+        CustomPotionEffectType effectType = potionEffect.getEffectType();
+        areaEffectCloud.setDuration(effectType.areaEffectCloudDuration(property));
+        areaEffectCloud.setDurationOnUse(effectType.areaEffectCloudDurationOnUse(property));
+        areaEffectCloud.setRadius(effectType.areaEffectCloudRadius(property));
+        areaEffectCloud.setRadiusOnUse(effectType.areaEffectCloudRadiusOnUse(property));
+        areaEffectCloud.setRadiusPerTick(effectType.areaEffectCloudRadiusPerTick(property));
+        areaEffectCloud.setReapplicationDelay(effectType.areaEffectCloudReapplicationDelay(property));
     }
 
     /**
@@ -157,9 +153,10 @@ public class CustomPotionManager implements Listener {
         //register potion mix recipes
         ArrayList<PotionMix> potionMixes = customPotionEffectType.potionMixes();
         if (potionMixes != null) {
+            PotionBrewer potionBrewer = CustomPotionAPI.getInstance().getServer().getPotionBrewer();
             for (PotionMix potionMix : potionMixes) {
-                CustomPotionAPI.getInstance().getServer().getPotionBrewer().removePotionMix(potionMix.getKey());
-                CustomPotionAPI.getInstance().getServer().getPotionBrewer().addPotionMix(potionMix);
+                potionBrewer.removePotionMix(potionMix.getKey());
+                potionBrewer.addPotionMix(potionMix);
             }
         }
     }
@@ -176,7 +173,7 @@ public class CustomPotionManager implements Listener {
         }
         PersistentDataContainer pdc = item.getItemMeta().getPersistentDataContainer();
         // check if the potion is a custom potion
-        String typeKey = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_type"), PersistentDataType.STRING);
+        String typeKey = pdc.get(EFFECT_TYPE, PersistentDataType.STRING);
         if (typeKey == null) {
             return null;
         }
@@ -193,19 +190,19 @@ public class CustomPotionManager implements Listener {
         if (customPotionEffectType == null) {
             return null;
         }
-        Integer duration = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER);
+        Integer duration = pdc.get(EFFECT_DURATION, PersistentDataType.INTEGER);
         if (duration == null) {
             duration = 0;
         }
-        Integer checkInterval = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_check_interval"), PersistentDataType.INTEGER);
+        Integer checkInterval = pdc.get(EFFECT_CHECK_INTERVAL, PersistentDataType.INTEGER);
         if (checkInterval == null) {
             checkInterval = 20;
         }
-        Integer amplifier = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_amplifier"), PersistentDataType.INTEGER);
+        Integer amplifier = pdc.get(EFFECT_AMPLIFIER, PersistentDataType.INTEGER);
         if (amplifier == null) {
             amplifier = 0;
         }
-        Integer delay = pdc.get(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_delay"), PersistentDataType.INTEGER);
+        Integer delay = pdc.get(EFFECT_DELAY, PersistentDataType.INTEGER);
         if (delay == null) {
             delay = 0;
         }
@@ -217,13 +214,10 @@ public class CustomPotionManager implements Listener {
      *
      * @param material               the material of the potion
      * @param customPotionEffectType the custom potion effect type
-     * @param duration               the duration of the potion effect in ticks
-     * @param amplifier              the amplifier of the potion effect
-     * @param checkInterval          the interval of the potion effect in ticks
-     * @param delay                  the delay of the potion effect in ticks
+     * @param property               the potion property
      * @return the custom potion item
      */
-    public static ItemStack getPotion(Material material, NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval, int delay) {
+    public static ItemStack getPotion(Material material, NamespacedKey customPotionEffectType, CustomPotionEffectProperty property) {
         ItemStack result = new ItemStack(material);
         ItemMeta meta = result.getItemMeta();
         meta.addItemFlags(ItemFlag.HIDE_POTION_EFFECTS);
@@ -232,7 +226,6 @@ public class CustomPotionManager implements Listener {
         //set the name, lore, color, enchant glow.
         for (CustomPotionEffectType potionEffectType : customPotionEffectTypes) {
             if (potionEffectType.getKey().equals(customPotionEffectType)) {
-                CustomPotionEffectProperty property = new CustomPotionEffectProperty(result, null, duration, duration, amplifier, false, checkInterval, delay);
                 if (material.equals(Material.POTION)) {
                     ((PotionMeta) meta).setColor(potionEffectType.potionColor(property));
                     meta.displayName(potionEffectType.potionDisplayName(property));
@@ -259,21 +252,21 @@ public class CustomPotionManager implements Listener {
                 break;
             }
         }
-        pdc.set(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_type"), PersistentDataType.STRING, customPotionEffectType.toString());
-        pdc.set(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_duration"), PersistentDataType.INTEGER, duration);
-        pdc.set(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_check_interval"), PersistentDataType.INTEGER, checkInterval);
-        pdc.set(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_amplifier"), PersistentDataType.INTEGER, amplifier);
-        pdc.set(new NamespacedKey(CustomPotionAPI.getInstance(), "custom_potion_effect_delay"), PersistentDataType.INTEGER, delay);
+        pdc.set(EFFECT_TYPE, PersistentDataType.STRING, customPotionEffectType.toString());
+        pdc.set(EFFECT_DURATION, PersistentDataType.INTEGER, property.getDuration());
+        pdc.set(EFFECT_CHECK_INTERVAL, PersistentDataType.INTEGER, property.getCheckInterval());
+        pdc.set(EFFECT_AMPLIFIER, PersistentDataType.INTEGER, property.getAmplifier());
+        pdc.set(EFFECT_DELAY, PersistentDataType.INTEGER, property.getDelay());
         result.setItemMeta(meta);
         return result;
     }
 
     /**
      * create a NORMAL VANILLA potion such as water bottle,
-     * YOU CAN NOT USE THIS METHOD TO CREATE A POTION WITH CUSTOM EFFECT
+     * YOU CAN NOT USE THIS METHOD TO CREATE A POTION WITH CUSTOM EFFECT.
      *
      * @param material   the material of the potion.
-     *                   you should only use Material.POTION or Material.SPLASH_POTION or Material.LINGERING_POTION
+     *                   you should only use Material.POTION or Material.SPLASH_POTION or Material.LINGERING_POTION.
      * @param potionType the potion type of the potion.
      *                   PotionType.WATER presents the water bottle.
      * @return the custom potion item
@@ -292,42 +285,32 @@ public class CustomPotionManager implements Listener {
      * create a custom potion item
      *
      * @param customPotionEffectType the custom potion effect type
-     * @param duration               the duration of the potion effect in ticks
-     * @param amplifier              the amplifier of the potion effect
-     * @param checkInterval          the interval of the potion effect in ticks
-     * @param delay                  the delay before the potion effect starts in ticks
+     * @param property               the custom potion effect property
      * @return the custom potion item
      */
-    public static ItemStack getPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval, int delay) {
-        return getPotion(Material.POTION, customPotionEffectType, duration, amplifier, checkInterval, delay);
+    public static ItemStack getPotion(NamespacedKey customPotionEffectType, CustomPotionEffectProperty property) {
+        return getPotion(Material.POTION, customPotionEffectType, property);
     }
 
     /**
      * create a custom splash potion item
      *
      * @param customPotionEffectType the custom potion effect type
-     * @param duration               the duration of the potion effect in ticks
-     * @param amplifier              the amplifier of the potion effect
-     * @param checkInterval          the interval of the potion effect in ticks
-     * @param delay                  the delay before the potion effect starts in ticks
+     * @param property               the custom potion effect property
      * @return the custom potion item
      */
-    public static ItemStack getSplashPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval, int delay) {
-        return getPotion(Material.SPLASH_POTION, customPotionEffectType, duration, amplifier, checkInterval, delay);
+    public static ItemStack getSplashPotion(NamespacedKey customPotionEffectType, CustomPotionEffectProperty property) {
+        return getPotion(Material.SPLASH_POTION, customPotionEffectType, property);
     }
 
     /**
      * create a custom lingering potion item
      *
      * @param customPotionEffectType the custom potion effect type
-     * @param duration               the duration of the potion effect in ticks
-     * @param amplifier              the amplifier of the potion effect
-     * @param checkInterval          the interval of the potion effect in ticks
-     * @param delay                  the delay before the potion effect starts in ticks
+     * @param property               the custom potion effect property
      * @return the custom potion item
      */
-    public static ItemStack getLingeringPotion(NamespacedKey customPotionEffectType, int duration, int amplifier, int checkInterval, int delay) {
-        return getPotion(Material.LINGERING_POTION, customPotionEffectType, duration, amplifier, checkInterval, delay);
+    public static ItemStack getLingeringPotion(NamespacedKey customPotionEffectType, CustomPotionEffectProperty property) {
+        return getPotion(Material.LINGERING_POTION, customPotionEffectType, property);
     }
-
 }

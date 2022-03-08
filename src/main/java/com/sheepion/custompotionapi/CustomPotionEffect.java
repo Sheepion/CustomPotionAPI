@@ -13,9 +13,6 @@ import java.util.ArrayList;
 import static com.sheepion.custompotionapi.CustomPotionManager.getActiveEffectsOnEntity;
 
 /**
- * project name: CustomPotionAPI
- * package: com.sheepion.custompotionapi
- * <p>
  * presents a custom potion effect with specified effect type, duration, amplifier and check interval.
  *
  * @author Sheepion
